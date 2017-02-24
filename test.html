@@ -4,14 +4,45 @@
     <meta charset='utf-8'>
   </head>
   <body>
-    Foo
+    <ul>
+      <li>Open this page with the extension installed (from Chrome extensions / Developer mode).</li>
+      <li>Inspect and open the javascript console.</li>
+      <li style="font-family: monospace;">p = new PaymentRequest(methodData, details, options)</li>
+    </ul>
+
     <script>
-      var methodData = [{
-        supportedMethods: ['non-supported-payment-method']
+      const methodData = [{
+        supportedMethods: ["basic-card"],
+        data: {
+          supportedNetworks: ['aFamousBrand', 'aDebitNetwork'],
+          supportedTypes: ['debit']
+        }
+      }, {
+        supportedMethods: ["bobpay.com"],
+        data: {
+          merchantIdentifier: "XXXX",
+          bobPaySpecificField: true
+        }
       }];
-      var details = {
-        total: {label: 'label', amount: {currency: 'USD', value: '5.00'}}
-      };
+
+      const details = {
+        id: 'awesome-id',
+        displayItems: [{
+          label: "Sub-total",
+          amount: { currency: "USD", value : "55.00" },
+        }, {
+          label: "Sales Tax",
+          amount: { currency: "USD", value : "5.00" },
+        }],
+        total: {
+          label: "Total due",
+          amount: { currency: "USD", value : "60.00" },
+        }
+      }
+
+      const options = {
+        requestShipping: true
+      }
     </script>
     <script src="index.js"></script>
   </body>

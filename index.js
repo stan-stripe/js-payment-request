@@ -107,16 +107,18 @@ class PaymentAddress {
 }
 
 const PaymentShippingType = {
-  SHIPPING: Symbol('shipping'),
-  DELIVERY: Symbol('delivery'),
-  PICKUP: Symbol('pickup'),
+  SHIPPING: 'shipping',
+  DELIVERY: 'delivery',
+  PICKUP: 'pickup',
 };
 
 const PaymentRequestState = {
-  CREATED: Symbol('created'),
-  INTERACTIVE: Symbol('interactive'),
-  CLOSED: Symbol('closed'),
+  CREATED: 'created',
+  INTERACTIVE: 'interactive',
+  CLOSED: 'closed',
 };
+
+const DECIMAL_MONETARY_VALUE_R = /^-?[0-9]+(\.[0-9]+)?$/
 
 class PaymentRequest {
 
@@ -175,7 +177,7 @@ class PaymentRequest {
       serializedMethodData.push({
         supportedMethods: paymentMethod.supportedMethods,
         serializedData: serializedData,
-      })
+      });
     });
 
     // 5. Process the total:
@@ -197,16 +199,16 @@ class PaymentRequest {
       throw new TypeError('details.total must have an amount');
     }
     if (!details.total.amount.value ||
-      !details.total.amount.value.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
-      throw new TypeError('details.total.value must be a valid decimal '+
-        'monetary value');
+      !details.total.amount.value.match(DECIMAL_MONETARY_VALUE_R)) {
+      throw new TypeError('Invalid decimal monetary value: ' +
+        details.total.amount.value);
     }
 
     //   5.3 If the first character of details.total.amount.value is U+002D
     //       HYPHEN-MINUS, then throw a TypeError, optionally informing the
     //       developer that the total can't be negative.
-    if (details.total.amount[0] === '-') {
-      throw new TypeError('details.total.value cannot be negative');
+    if (details.total.amount.value[0] === '-') {
+      throw new TypeError('total value amount cannot be negative');
     }
 
     // TODO(stan): what about the currency? at least a regexp?
@@ -223,13 +225,13 @@ class PaymentRequest {
           throw new TypeError('displayItem must have an amount');
         }
         if (!displayItem.amount.value ||
-          !displayItem.amount.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
-          throw new TypeError('displayItem.amount.value is not a valid '+
-            'decimal monetary value');
+          !displayItem.amount.value.match(DECIMAL_MONETARY_VALUE_R)) {
+          throw new TypeError('Invalid  decimal monetary value: ' +
+            displayItem.amount.value);
         }
 
         // TODO(stan): what about the currency? at least a regexp?
-      })
+      });
     }
 
     // 7. Let selectedShippingOption be null.
@@ -261,9 +263,9 @@ class PaymentRequest {
           throw new TypeError('shippingOption must have an amount');
         }
         if (!option.amount.value ||
-          !option.amount.value.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
-          throw new TypeError('shippingOption.amount.value is not a valid '+
-            'decimal monetary value');
+          !option.amount.value.match(DECIMAL_MONETARY_VALUE_R)) {
+          throw new TypeError('Invalid decimal monetary value: ' +
+            option.amount.value);
         }
 
         //   8.2.3.2 If seenIDs contains option.id, then set options to an
@@ -287,7 +289,7 @@ class PaymentRequest {
         if (option.selected) {
           selectedShippingOption = option.id;
         }
-      })
+      });
     }
 
     //   8.3 Set details.shippingOptions to options.
@@ -298,7 +300,88 @@ class PaymentRequest {
 
     // 10. Process payment details modifiers:
 
-    // TODO(stan)
+    //   10.1 Let modifiers be an empty sequence<PaymentDetailsModifier>.
+    let modifiers = [];
+
+    //   10.2 If the modifiers member of details is present, then:
+    if (Array.isArray(details.modifiers)) {
+
+      //   10.2.1 Set modifiers to details.modifiers.
+      modifiers = details.modifiers;
+
+      //   10.2.2 For each modifier of modifiers:
+      modifiers.forEach((modifier) => {
+
+        //   10.2.2.1 If the total member of modifier is present, then:
+        if (modifier.total) {
+
+          if (!modifier.total.amount) {
+            throw new TypeError('details modifier total must have an amount');
+          }
+
+          //   10.2.2.1.1 Let value be modifier.total.amount.value.
+          let value = modifier.total.amount.value;
+
+          //   10.2.2.1.2 If value is not a valid decimal monetary value, then
+          //              throw a TypeError, optionally informing the developer
+          //              that the value is invalid.
+          if (!value || !value.match(DECIMAL_MONETARY_VALUE_R)) {
+            throw new TypeError('Invalid decimal monetary value: ' + value);
+          }
+
+          //   10.2.2.1.3 If the first character of value is U+002D
+          //                 HYPHEN-MINUS, then throw a TypeError, optionally
+          //                 informing the developer that the value can't be
+          //                 negative.
+          if (value[0] === '-') {
+            throw new TypeError('modifier total value amount cannot be ' +
+              'negative');
+          }
+        }
+
+        //   10.2.2.2 If the additionalDisplayItems member of modifier is
+        //            present, then for each item of
+        //            modifier.additionalDisplayItems:
+        if (Array.isArray(modifier.additionalDisplayItems)) {
+          modifier.additionalDisplayItems.forEach((item) => {
+
+            if (!item.amount) {
+              throw new TypeError('details modifier additional display item ' +
+                'must have an amount');
+            }
+
+            // 10.2.2.2.1 Let value be item.amount.value.
+            let value = item.amount.value;
+
+            // 10.2.2.2.2 If value is not a valid decimal monetary value, then
+            //            throw a TypeError, optionally informing the developer
+            //            that the value is invalid.
+            if (!value || !value.match(DECIMAL_MONETARY_VALUE_R)) {
+              throw new TypeError('Invalid decimal monetary value: ' + value);
+            }
+          });
+        }
+
+        //   10.2.2.3 Let serializedData be the result of JSON-serializing
+        //            modifier.data into a string, if the data member of
+        //            modifier is present, or null if it is not. Rethrow any
+        //            exceptions.
+        let serializedData = null;
+        if (modifier.data) {
+          serializedData = JSON.stringify(modifier.data)
+        }
+
+        //   10.2.2.4 Add serializedData to serializedModifierData.
+        serializedModifierData.push(serializedData);
+
+        //   10.2.2.5 Remove the data member of modifier, if it is present.
+        delete modifer.data
+      });
+
+    }
+
+    //   10.3 Set details.modifiers to modifiers.
+    details.modifiers = modifiers;
 
     // 11. If the error member of details is present, then throw a TypeError,
     //     optionally informing the developer that an error message cannot be
@@ -345,13 +428,13 @@ class PaymentRequest {
     //     "shipping".
     if (options && options.requestShipping) {
       switch (options.shippingType) {
-        case 'shipping':
+        case PaymentShippingType.SHIPPING:
           this.shippingType = PaymentShippingType.SHIPPING;
           break;
-        case 'delivery':
+        case PaymentShippingType.DELIVERY:
           this.shippingType = PaymentShippingType.DELIVERY;
           break;
-        case 'pickup':
+        case PaymentShippingType.PICKUP:
           this.shippingType = PaymentShippingType.PICKUP;
           break;
         default:
