@@ -1,5 +1,3 @@
-// NOTES
-
 class PaymentAddress {
   constructor(
     country,
@@ -126,7 +124,7 @@ class PaymentRequest {
   ) {
     // 1. If a paymentRequestId was not provided during construction, generate
     //    a paymentRequestId.
-    this.id = this.details['id'] || 'dummy_payment_request_id';
+    let id = details['id'] || 'dummy_payment_request_id';
 
     // 2. If the current settings object's responsible document is not allowed
     //    to use the feature indicated by attribute name allowpaymentrequest,
@@ -356,9 +354,12 @@ class PaymentRequest {
     }
 
     // Other internal state.
+    this.id = id;
     this.acceptPromise = null;
     this.onshippingaddresschange = []
     this.onshippingoptionchange = []
+
+    // TODO(stan) add setting id in the constructor reference?
   }
 
   static get id() {
@@ -369,23 +370,23 @@ class PaymentRequest {
   }
 
   static get shippingAddress() {
-    return this.shippintAddress;
+    return this.shippingAddress;
   }
-  static set shippintAddress(value) {
+  static set shippingAddress(value) {
     throw new DOMException('The shippingAddress property is read-only');
   }
 
   static get shippingOption() {
-    return this.shippintOption;
+    return this.shippingOption;
   }
-  static set shippintOption(value) {
+  static set shippingOption(value) {
     throw new DOMException('The shippingOption property is read-only');
   }
 
   static get shippingType() {
-    return this.shippintType;
+    return this.shippingType;
   }
-  static set shippintType(value) {
+  static set shippingType(value) {
     throw new DOMException('The shippingType property is read-only');
   }
 
