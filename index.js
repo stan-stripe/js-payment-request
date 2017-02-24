@@ -363,8 +363,6 @@ class PaymentRequest {
     // Other internal state.
     this.id = id;
     this.acceptPromise = null;
-    this.onshippingaddresschange = []
-    this.onshippingoptionchange = []
 
     // TODO(stan) add setting id in the constructor reference?
   }
@@ -395,17 +393,6 @@ class PaymentRequest {
   }
   static set shippingType(value) {
     throw new DOMException('The shippingType property is read-only');
-  }
-
-  addEventListener(event, handler) {
-    switch(event) {
-      case 'shippingaddresschange':
-        this.onshippingaddresschange.push(handler);
-        break;
-      case 'shippingoptionchange':
-        this.onshippingoptionchange.push(handler);
-        break;
-    }
   }
 
   show() {
