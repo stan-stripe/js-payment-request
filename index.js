@@ -118,6 +118,11 @@ const PaymentRequestState = {
   CLOSED: 'closed',
 };
 
+const PaymentRequestEvent = {
+  SHIPPING_OPTION_CHANGE: 'shippingoptionchange',
+  SHIPPING_ADDRESS_CHANGE: 'shippingaddresschange',
+};
+
 const DECIMAL_MONETARY_VALUE_R = /^-?[0-9]+(\.[0-9]+)?$/
 
 class PaymentRequest {
@@ -447,6 +452,10 @@ class PaymentRequest {
     this.id = id;
     this.acceptPromise = null;
 
+    this.handlers = {}
+    this.handlers[PaymentRequestEvent.SHIPPING_ADDRESS_CHANGE] = [];
+    this.handlers[PaymentRequestEvent.SHIPPING_OPTION_CHANGE] = [];
+
     // TODO(stan) add setting id in the constructor reference?
   }
 
@@ -476,6 +485,19 @@ class PaymentRequest {
   }
   static set shippingType(value) {
     throw new DOMException('The shippingType property is read-only');
+  }
+
+  addEventListener(type, handler) {
+    if (handler && getClass.call(handler) == '[object Function]') {
+      switch (type) {
+        case 'on'+PaymentRequestEvent.SHIPPING_OPTION_CHANGE:
+          this.handlers[PaymentRequestEvent.SHIPPING_OPTION_CHANGE].push(handler);
+          break;
+        case 'on'+PaymentRequestEvent.SHIPPING_ADDRESS_CHANGE:
+          this.handlers[PaymentRequestEvent.SHIPPING_ADDRESS_CHANGE].push(handler);
+          break;
+      }
+    }
   }
 
   show() {
