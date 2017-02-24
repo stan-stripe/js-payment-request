@@ -1,3 +1,6 @@
+// NOTE
+// https://w3c-test.org/submissions/4768/payment-request/payment-request-show-accept-promise-returned.html
+
 class PaymentAddress {
   constructor(
     country,
@@ -10,7 +13,7 @@ class PaymentAddress {
     languageCode=null,
     organization=null,
     recipient=null,
-    phone=null,
+    phone=null
   ) {
     this.country = country;
     this.addressLine = addressLine;
@@ -120,11 +123,14 @@ class PaymentRequest {
   constructor(
     methodData,
     details,
-    options,
+    options
   ) {
     // 1. If a paymentRequestId was not provided during construction, generate
     //    a paymentRequestId.
-    let id = details['id'] || 'dummy_payment_request_id';
+    let id = 'dummy_payment_request_id';
+    if (details && details.id) {
+      id = details.id;
+    }
 
     // 2. If the current settings object's responsible document is not allowed
     //    to use the feature indicated by attribute name allowpaymentrequest,
@@ -159,146 +165,147 @@ class PaymentRequest {
       //          paymentMethod.data into a string, if the data member of
       //          paymentMethod is present, or null if it is not. Rethrow any
       //          exceptions.
+      let serializedData = null;
       if (paymentMethod.data) {
-        let serializedData = JSON.stringify(paymentMethod.data)
+        serializedData = JSON.stringify(paymentMethod.data)
       }
 
       //    4.2.3 Add the tuple (paymentMethod.supportedMethods,
       //          serializedData) to serializedMethodData.
-      serializedMethodData.push_back({
+      serializedMethodData.push({
         supportedMethods: paymentMethod.supportedMethods,
         serializedData: serializedData,
       })
-
-      // 5. Process the total:
-
-      //   5.1 If the total member of details is not present, then throw a
-      //       TypeError, optionally informing the developer that including
-      //       total is required.
-      if (!details) {
-        throw new TypeError('details is a required parameter');
-      }
-      if (!details.total) {
-        throw new TypeError('details must have a total');
-      }
-
-      //   5.2 If details.total.amount.value is not a valid decimal monetary
-      //       value, then throw a TypeError; optionally informing the
-      //       developer that the value is invalid.
-      if (!details.total.amount) {
-        throw new TypeError('details.total must have an amount');
-      }
-      if (!details.total.amount.value ||
-        !details.total.amount.value.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
-        throw new TypeError('details.total.value must be a valid decimal '+
-          'monetary value');
-      }
-
-      //   5.3 If the first character of details.total.amount.value is U+002D
-      //       HYPHEN-MINUS, then throw a TypeError, optionally informing the
-      //       developer that the total can't be negative.
-      if (details.total.amount[0] === '-') {
-        throw new TypeError('details.total.value cannot be negative');
-      }
-
-      // TODO(stan): what about the currency? at least a regexp?
-
-      // 6. If the displayItems member of details is present, then for each
-      //    item in details.displayItems:
-      if (Array.isArray(details.displayItems)) {
-        details.displayItems.forEach((displayItem) => {
-
-          // 6.1 If item.amount.value is not a valid decimal monetary value,
-          //     then throw a TypeError, optionally informing the developer
-          //     that the value is invalid.
-          if (!displayItem.amount) {
-            throw new TypeError('displayItem must have an amount');
-          }
-          if (!displayItem.amount.value ||
-            !displayItem.amount.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
-            throw new TypeError('displayItem.amount.value is not a valid '+
-              'decimal monetary value');
-          }
-
-          // TODO(stan): what about the currency? at least a regexp?
-        })
-      }
-
-      // 7. Let selectedShippingOption be null.
-      let selectedShippingOption = null;
-
-      // 8. Process shipping options:
-
-      //   8.1 Let options be an empty sequence<PaymentShippingOption>.
-      let shippingOptions = []
-
-      // TODO(stan): rename options -> shippingOptions
-
-      //   8.2 If the shippingOptions member of details is present, then:
-      if (Array.isArray(details.shippingOptions)) {
-
-        //   8.2.1 Let seenIDs be an empty list.
-        let seenIDs = [];
-
-        //   8.2.2 Set options to details.shippingOptions.
-        shippingOptions = details.shippingOptions
-
-        //   8.2.3 For each option in options:
-        shippingOptions.forEach((option) => {
-
-          //   8.2.3.1 If option.amount.value is not a valid decimal monetary
-          //           value, then throw a TypeError, optionally informing the
-          //           developer that the value is invalid.
-          if (!option.amount) {
-            throw new TypeError('shippingOption must have an amount');
-          }
-          if (!option.amount.value ||
-            !option.amount.value.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
-            throw new TypeError('shippingOption.amount.value is not a valid '+
-              'decimal monetary value');
-          }
-
-          //   8.2.3.2 If seenIDs contains option.id, then set options to an
-          //           empty sequence and break.
-          if (seenIDs.includes(option.id)) {
-            shippingOptions = [];
-            break;
-          }
-
-          //   8.2.3.3 Append option.id to seenIDs.
-          shippingOptions.push_back(option);
-        });
-
-        //   8.2.4 For each option in options (which may have been reset to the
-        //         empty sequence in the previous step):
-        shippingOptions.forEach((option) => {
-
-          //   8.2.4.1 If option.selected is true, then set
-          //           selectedShippingOption to option.id.
-          if (option.selected) {
-            selectedShippingOption = option.id;
-          }
-        })
-
-      }
-
-      //   8.3 Set details.shippingOptions to options.
-      details.shippingOptions = shippingOptions;
-
-      // 9. Let serializedModifierData be an empty list.
-      let serializedModifierData = [];
-
-      // 10. Process payment details modifiers:
-
-      // TODO(stan)
-
-      // 11. If the error member of details is present, then throw a TypeError,
-      //     optionally informing the developer that an error message cannot be
-      //     specified in the constructor.
-      if (details.error) {
-        throw new TypeError('details.error cannot be set at construction');
-      }
     });
+
+    // 5. Process the total:
+
+    //   5.1 If the total member of details is not present, then throw a
+    //       TypeError, optionally informing the developer that including
+    //       total is required.
+    if (!details) {
+      throw new TypeError('details is a required parameter');
+    }
+    if (!details.total) {
+      throw new TypeError('details must have a total');
+    }
+
+    //   5.2 If details.total.amount.value is not a valid decimal monetary
+    //       value, then throw a TypeError; optionally informing the
+    //       developer that the value is invalid.
+    if (!details.total.amount) {
+      throw new TypeError('details.total must have an amount');
+    }
+    if (!details.total.amount.value ||
+      !details.total.amount.value.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
+      throw new TypeError('details.total.value must be a valid decimal '+
+        'monetary value');
+    }
+
+    //   5.3 If the first character of details.total.amount.value is U+002D
+    //       HYPHEN-MINUS, then throw a TypeError, optionally informing the
+    //       developer that the total can't be negative.
+    if (details.total.amount[0] === '-') {
+      throw new TypeError('details.total.value cannot be negative');
+    }
+
+    // TODO(stan): what about the currency? at least a regexp?
+
+    // 6. If the displayItems member of details is present, then for each
+    //    item in details.displayItems:
+    if (Array.isArray(details.displayItems)) {
+      details.displayItems.forEach((displayItem) => {
+
+        // 6.1 If item.amount.value is not a valid decimal monetary value,
+        //     then throw a TypeError, optionally informing the developer
+        //     that the value is invalid.
+        if (!displayItem.amount) {
+          throw new TypeError('displayItem must have an amount');
+        }
+        if (!displayItem.amount.value ||
+          !displayItem.amount.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
+          throw new TypeError('displayItem.amount.value is not a valid '+
+            'decimal monetary value');
+        }
+
+        // TODO(stan): what about the currency? at least a regexp?
+      })
+    }
+
+    // 7. Let selectedShippingOption be null.
+    let selectedShippingOption = null;
+
+    // 8. Process shipping options:
+
+    //   8.1 Let options be an empty sequence<PaymentShippingOption>.
+    let shippingOptions = []
+
+    // TODO(stan): rename options -> shippingOptions
+
+    //   8.2 If the shippingOptions member of details is present, then:
+    if (Array.isArray(details.shippingOptions)) {
+
+      //   8.2.1 Let seenIDs be an empty list.
+      let seenIDs = [];
+
+      //   8.2.2 Set options to details.shippingOptions.
+      shippingOptions = details.shippingOptions
+
+      //   8.2.3 For each option in options:
+      shippingOptions.some((option) => {
+
+        //   8.2.3.1 If option.amount.value is not a valid decimal monetary
+        //           value, then throw a TypeError, optionally informing the
+        //           developer that the value is invalid.
+        if (!option.amount) {
+          throw new TypeError('shippingOption must have an amount');
+        }
+        if (!option.amount.value ||
+          !option.amount.value.match(/^-?[0-9]+(\.[0-9]+)?$/)) {
+          throw new TypeError('shippingOption.amount.value is not a valid '+
+            'decimal monetary value');
+        }
+
+        //   8.2.3.2 If seenIDs contains option.id, then set options to an
+        //           empty sequence and break.
+        if (seenIDs.includes(option.id)) {
+          shippingOptions = [];
+          return true;
+        }
+
+        //   8.2.3.3 Append option.id to seenIDs.
+        shippingOptions.push(option);
+        return false;
+      });
+
+      //   8.2.4 For each option in options (which may have been reset to the
+      //         empty sequence in the previous step):
+      shippingOptions.forEach((option) => {
+
+        //   8.2.4.1 If option.selected is true, then set
+        //           selectedShippingOption to option.id.
+        if (option.selected) {
+          selectedShippingOption = option.id;
+        }
+      })
+    }
+
+    //   8.3 Set details.shippingOptions to options.
+    details.shippingOptions = shippingOptions;
+
+    // 9. Let serializedModifierData be an empty list.
+    let serializedModifierData = [];
+
+    // 10. Process payment details modifiers:
+
+    // TODO(stan)
+
+    // 11. If the error member of details is present, then throw a TypeError,
+    //     optionally informing the developer that an error message cannot be
+    //     specified in the constructor.
+    if (details.error) {
+      throw new TypeError('details.error cannot be set at construction');
+    }
 
     // 12. Let request be a new PaymentRequest.
     // NOOP
@@ -336,7 +343,7 @@ class PaymentRequest {
     //     options.shippingType is not a valid PaymentShippingType value then
     //     set the value of the shippingType attribute on request to
     //     "shipping".
-    if (options.requestShipping) {
+    if (options && options.requestShipping) {
       switch (options.shippingType) {
         case 'shipping':
           this.shippingType = PaymentShippingType.SHIPPING;
@@ -393,10 +400,10 @@ class PaymentRequest {
   addEventListener(event, handler) {
     switch(event) {
       case 'shippingaddresschange':
-        this.onshippingaddresschange.push_back(handler);
+        this.onshippingaddresschange.push(handler);
         break;
       case 'shippingoptionchange':
-        this.onshippingoptionchange.push_back(handler);
+        this.onshippingoptionchange.push(handler);
         break;
     }
   }
