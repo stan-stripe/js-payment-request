@@ -125,6 +125,8 @@ const PaymentRequestEvent = {
 
 const DECIMAL_MONETARY_VALUE_R = /^-?[0-9]+(\.[0-9]+)?$/
 
+let PaymentRequestRegistry = {};
+
 class PaymentRequest {
 
   constructor(
@@ -452,11 +454,14 @@ class PaymentRequest {
     this.id = id;
     this.acceptPromise = null;
 
+    // TODO(stan) add setting id in the constructor reference?
+
+    // Out of spec for local functionality.
     this.handlers = {}
     this.handlers[PaymentRequestEvent.SHIPPING_ADDRESS_CHANGE] = [];
     this.handlers[PaymentRequestEvent.SHIPPING_OPTION_CHANGE] = [];
 
-    // TODO(stan) add setting id in the constructor reference?
+    PaymentRequestRegistry[this.id] = this
   }
 
   static get id() {
@@ -501,11 +506,51 @@ class PaymentRequest {
   }
 
   show() {
-    this.acceptPromise = new Promise((resolve, reject) => {
+    // 1. Let request be the PaymentRequest object on which the method is
+    //    called.
+    let request = this;
+
+    // 2. If the value of request.[[state]] is not "created" then throw an
+    //    "InvalidStateError" DOMException.
+    if (this.state !== PaymentRequestState.CREATED) {
+      throw new DOMException("InvalidStateError");
+    }
+
+    // 3. Set the value of request.[[state]] to "interactive".
+    this.state = PaymentRequestState.INTERACTIVE;
+
+    // 4. Let acceptPromise be a new Promise.
+    let acceptPromise = new Promise((resolve, reject) => {
       this.showResolve = resolve;
       this.showReject = reject;
     });
-    // TODO show something
+
+    // 5. Set acceptPromise in request.[[acceptPromise]].
+    this.acceptPromise = acceptPromise;
+
+    // 6. Return acceptPromise and perform the remaining steps in parallel.
+    setTimeout(() => {
+      // 7 / 8 / 9 are emulated by the stub interface.
+
+      let overlay = document.createElement("div");
+      overlay.classList.add("payment-request-overlay");
+      overlay.innerHTML = ''
+      overlay.innerHTML += 'PaymentRequest actions:';
+      overlay.innerHTML += '<ul>';
+      overlay.innerHTML += '  <li><a href="#" onclick="overlayAbort(\''+this.id+'\');">Abort</a></li>';
+      overlay.innerHTML += '  <li><a href="#" onclick="overlayError(\''+this.id+'\',\'no-match\');">Error: no-match</a></li>';
+      overlay.innerHTML += '</ul>';
+
+      document.getElementsByTagName('body')[0].appendChild(overlay)
+    })
+
     return this.acceptPromise;
   }
 }
+
+var overlayAbort = (id) => {
+  console.log('ABORT: '+ PaymentRequestRegistry[id])
+};
+var overlaySetAddress = (id) => {
+  console.log('SETADDRESS: '+ PaymentRequestRegistry[id])
+};
